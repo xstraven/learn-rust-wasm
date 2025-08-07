@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Lorenz Attractor - Rust + WebAssembly</title>
+    <title>Chaotic Attractors - Rust + WebAssembly</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -134,7 +134,7 @@
     </style>
 </head>
 <body>
-    <h1>Lorenz Attractor Simulation</h1>
+    <h1>Chaotic Attractors Simulation</h1>
     <p style="text-align: center; color: #aaa; margin-bottom: 30px;">
         Powered by Rust compiled to WebAssembly for high-performance mathematical computation
     </p>
@@ -151,26 +151,46 @@
         </div>
         
         <div class="controls">
+            <h2>Attractor Selection</h2>
+            
+            <div class="control-group">
+                <label>Chaotic System:</label>
+                <select id="attractor-type" style="width: 100%; padding: 5px; background-color: #333; color: #fff; border: 1px solid #444; border-radius: 4px;">
+                    <option value="0">Lorenz Attractor</option>
+                    <option value="1">Rössler Attractor</option>
+                    <option value="2">Thomas Attractor</option>
+                    <option value="3">Chua's Circuit</option>
+                </select>
+            </div>
+            
             <h2>Simulation Parameters</h2>
             
             <div class="control-group">
-                <label>Sigma (σ): <span id="sigma-value">10.0</span></label>
-                <input type="range" id="sigma" min="0.1" max="20" step="0.1" value="10">
+                <label><span id="param-a-label">σ (sigma)</span>: <span id="param-a-value">10.0</span></label>
+                <input type="range" id="param-a" min="0.1" max="20" step="0.1" value="10">
             </div>
             
             <div class="control-group">
-                <label>Rho (ρ): <span id="rho-value">28.0</span></label>
-                <input type="range" id="rho" min="0.1" max="50" step="0.1" value="28">
+                <label><span id="param-b-label">ρ (rho)</span>: <span id="param-b-value">28.0</span></label>
+                <input type="range" id="param-b" min="0.1" max="50" step="0.1" value="28">
             </div>
             
             <div class="control-group">
-                <label>Beta (β): <span id="beta-value">2.67</span></label>
-                <input type="range" id="beta" min="0.1" max="5" step="0.01" value="2.67">
+                <label><span id="param-c-label">β (beta)</span>: <span id="param-c-value">2.67</span></label>
+                <input type="range" id="param-c" min="0.1" max="5" step="0.01" value="2.67">
             </div>
             
             <div class="control-group">
                 <label>Speed: <span id="speed-value">1</span></label>
                 <input type="range" id="speed" min="1" max="10" step="1" value="1">
+            </div>
+            
+            <div class="control-group">
+                <label>Integration Method:</label>
+                <select id="integration-method" style="width: 100%; padding: 5px; background-color: #333; color: #fff; border: 1px solid #444; border-radius: 4px;">
+                    <option value="0">Euler (Fast)</option>
+                    <option value="1">Runge-Kutta 4 (Accurate)</option>
+                </select>
             </div>
             
             <h2>Initial Conditions</h2>
@@ -190,26 +210,102 @@
                 <input type="number" id="z0" value="0" step="0.1">
             </div>
             
+            <h2>Rendering</h2>
+            
+            <div class="control-group">
+                <label>Renderer:</label>
+                <select id="renderer-type" style="width: 100%; padding: 5px; background-color: #333; color: #fff; border: 1px solid #444; border-radius: 4px;">
+                    <option value="canvas">Canvas 2D</option>
+                    <option value="webgl">WebGL (Hardware Accelerated)</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Color Scheme:</label>
+                <select id="color-scheme" style="width: 100%; padding: 5px; background-color: #333; color: #fff; border: 1px solid #444; border-radius: 4px;">
+                    <option value="0">Blue-Cyan</option>
+                    <option value="1">Magenta-Green</option>
+                    <option value="2">Red-Yellow</option>
+                    <option value="3">Purple-Magenta</option>
+                </select>
+            </div>
+            
+            <div id="webgl-controls" style="display: none;">
+                <div class="control-group">
+                    <label>Camera Distance: <span id="camera-distance-value">100</span></label>
+                    <input type="range" id="camera-distance" min="50" max="200" step="5" value="100">
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        <input type="checkbox" id="auto-rotate"> Auto-rotate 3D view
+                    </label>
+                </div>
+            </div>
+            
             <h2>Controls</h2>
             
             <button id="start-stop">Start Simulation</button>
             <button id="reset">Reset</button>
             <button id="clear">Clear Trail</button>
             
+            <h2>Chaos Analysis</h2>
+            
+            <div class="control-group">
+                <label>
+                    <input type="checkbox" id="show-poincare"> Show Poincaré Section
+                </label>
+            </div>
+            
+            <div class="control-group">
+                <label>Poincaré Plane Z: <span id="poincare-z-value">27.0</span></label>
+                <input type="range" id="poincare-z" min="0" max="50" step="1" value="27">
+            </div>
+            
+            <button id="reset-chaos">Reset Analysis</button>
+            
+            <h2>Presets</h2>
+            
+            <div class="control-group">
+                <label>Parameter Presets:</label>
+                <select id="presets" style="width: 100%; padding: 5px; background-color: #333; color: #fff; border: 1px solid #444; border-radius: 4px;">
+                    <option value="">Select a preset...</option>
+                </select>
+            </div>
+            
+            <button id="save-preset">Save Current Settings</button>
+            
+            <h2>Export & Share</h2>
+            
+            <button id="screenshot">Save Screenshot</button>
+            <button id="share-url">Copy Share URL</button>
+            <button id="export-data">Export Trajectory Data</button>
+            
             <div class="stats">
                 <div><strong>Status:</strong> <span id="status">Stopped</span></div>
                 <div><strong>Points:</strong> <span id="point-count">0</span></div>
                 <div><strong>FPS:</strong> <span id="fps">0</span></div>
+                <div><strong>Renderer:</strong> <span id="current-renderer">Canvas 2D</span></div>
+                <div><strong>Memory:</strong> <span id="memory-usage">0 KB</span></div>
+                <div><strong>Lyapunov:</strong> <span id="lyapunov-exponent">0.000</span></div>
+                <div><strong>Poincaré Points:</strong> <span id="poincare-count">0</span></div>
             </div>
             
             <div class="info">
-                <h3 style="margin-top: 0; color: #00ffff;">About the Lorenz Attractor</h3>
-                <p>The Lorenz attractor is a chaotic system discovered by Edward Lorenz. It demonstrates how complex, unpredictable behavior can arise from simple deterministic equations.</p>
+                <h3 style="margin-top: 0; color: #00ffff;">About Chaotic Attractors</h3>
+                <p>Chaotic attractors are mathematical objects that demonstrate how complex, unpredictable behavior can arise from simple deterministic equations.</p>
                 
-                <p><strong>Equations:</strong><br>
-                dx/dt = σ(y - x)<br>
-                dy/dt = x(ρ - z) - y<br>
-                dz/dt = xy - βz</p>
+                <p><strong>Supported Systems:</strong><br>
+                • <strong>Lorenz:</strong> Weather model (1963)<br>
+                • <strong>Rössler:</strong> Simplified chaos system (1976)<br>
+                • <strong>Thomas:</strong> Cyclically symmetric attractor (1999)<br>
+                • <strong>Chua:</strong> Electronic circuit chaos (1983)</p>
+                
+                <p><strong>Features:</strong><br>
+                • Runge-Kutta 4th order integration<br>
+                • WebGL hardware acceleration<br>
+                • Real-time parameter adjustment<br>
+                • Multiple visualization modes</p>
                 
                 <p><strong>Why Rust + WASM?</strong><br>
                 This simulation performs thousands of floating-point calculations per frame. Rust's zero-cost abstractions and memory safety, compiled to WebAssembly, provide near-native performance in the browser.</p>
@@ -218,14 +314,15 @@
     </div>
     
     <script type="module">
-        import init, { LorenzAttractor } from './pkg/lorenz_attractor_wasm.js';
+        import init, { ChaoticAttractor } from './pkg/lorenz_attractor_wasm.js';
+        import { WebGLRenderer } from './webgl-renderer.js';
         
         async function run() {
             await init();
             
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
-            const lorenz = new LorenzAttractor();
+            const attractor = new ChaoticAttractor();
             
             let isRunning = false;
             let currentView = 'xy';
@@ -233,6 +330,53 @@
             let lastTime = 0;
             let frameCount = 0;
             let lastFpsUpdate = 0;
+            let useWebGL = false;
+            let webglRenderer = null;
+            
+            // Predefined interesting presets for each attractor
+            const presetData = {
+                0: [ // Lorenz
+                    { name: "Classic Lorenz", params: [10, 28, 8/3], x0: 0.1, y0: 0, z0: 0 },
+                    { name: "Chaotic Lorenz", params: [10, 28, 8/3], x0: 1, y0: 1, z0: 1 },
+                    { name: "Pre-chaos", params: [10, 13.926, 8/3], x0: 0.1, y0: 0, z0: 0 },
+                    { name: "Different Butterfly", params: [16, 45.92, 4], x0: 0.1, y0: 0, z0: 0 }
+                ],
+                1: [ // Rössler
+                    { name: "Classic Rössler", params: [0.2, 0.2, 5.7], x0: 1, y0: 1, z0: 1 },
+                    { name: "Funnel Attractor", params: [0.2, 0.2, 2.5], x0: 1, y0: 1, z0: 1 },
+                    { name: "Spiral Chaos", params: [0.1, 0.1, 4], x0: 0.5, y0: 0.5, z0: 0.5 }
+                ],
+                2: [ // Thomas
+                    { name: "Classic Thomas", params: [0.208186, 0, 0], x0: 0.1, y0: 0, z0: 0 },
+                    { name: "Faster Thomas", params: [0.3, 0, 0], x0: 0.2, y0: 0.1, z0: 0.1 },
+                    { name: "Slower Thomas", params: [0.15, 0, 0], x0: 0.1, y0: 0, z0: 0 }
+                ],
+                3: [ // Chua
+                    { name: "Classic Chua", params: [15.6, 28, -1.143], x0: 0.7, y0: 0, z0: 0 },
+                    { name: "Double Scroll", params: [9, 14.87, -1.27], x0: 0.5, y0: 0.5, z0: 0.5 },
+                    { name: "Spiral Chua", params: [10.82, 14.98, -1.31], x0: 1, y0: 0, z0: 0 }
+                ]
+            };
+            
+            // Load saved presets from localStorage
+            const savedPresets = localStorage.getItem('chaotic-attractors-presets');
+            if (savedPresets) {
+                try {
+                    const parsed = JSON.parse(savedPresets);
+                    // Merge with default presets
+                    for (const [key, value] of Object.entries(parsed)) {
+                        if (presetData[key]) {
+                            presetData[key] = [...presetData[key], ...value.filter(p => 
+                                !presetData[key].some(existing => existing.name === p.name)
+                            )];
+                        } else {
+                            presetData[key] = value;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to load presets from localStorage');
+                }
+            }
             
             const elements = {
                 startStop: document.getElementById('start-stop'),
@@ -241,43 +385,163 @@
                 status: document.getElementById('status'),
                 pointCount: document.getElementById('point-count'),
                 fps: document.getElementById('fps'),
-                sigma: document.getElementById('sigma'),
-                rho: document.getElementById('rho'),
-                beta: document.getElementById('beta'),
+                attractorType: document.getElementById('attractor-type'),
+                paramA: document.getElementById('param-a'),
+                paramB: document.getElementById('param-b'),
+                paramC: document.getElementById('param-c'),
                 speed: document.getElementById('speed'),
                 x0: document.getElementById('x0'),
                 y0: document.getElementById('y0'),
                 z0: document.getElementById('z0'),
-                sigmaValue: document.getElementById('sigma-value'),
-                rhoValue: document.getElementById('rho-value'),
-                betaValue: document.getElementById('beta-value'),
+                paramAValue: document.getElementById('param-a-value'),
+                paramBValue: document.getElementById('param-b-value'),
+                paramCValue: document.getElementById('param-c-value'),
+                paramALabel: document.getElementById('param-a-label'),
+                paramBLabel: document.getElementById('param-b-label'),
+                paramCLabel: document.getElementById('param-c-label'),
                 speedValue: document.getElementById('speed-value'),
                 viewXY: document.getElementById('view-xy'),
                 viewXZ: document.getElementById('view-xz'),
                 viewYZ: document.getElementById('view-yz'),
-                view3D: document.getElementById('view-3d')
+                view3D: document.getElementById('view-3d'),
+                integrationMethod: document.getElementById('integration-method'),
+                rendererType: document.getElementById('renderer-type'),
+                colorScheme: document.getElementById('color-scheme'),
+                cameraDistance: document.getElementById('camera-distance'),
+                cameraDistanceValue: document.getElementById('camera-distance-value'),
+                autoRotate: document.getElementById('auto-rotate'),
+                webglControls: document.getElementById('webgl-controls'),
+                currentRenderer: document.getElementById('current-renderer'),
+                memoryUsage: document.getElementById('memory-usage'),
+                showPoincare: document.getElementById('show-poincare'),
+                poincareZ: document.getElementById('poincare-z'),
+                poincareZValue: document.getElementById('poincare-z-value'),
+                resetChaos: document.getElementById('reset-chaos'),
+                lyapunovExponent: document.getElementById('lyapunov-exponent'),
+                poincareCount: document.getElementById('poincare-count'),
+                presets: document.getElementById('presets'),
+                savePreset: document.getElementById('save-preset'),
+                screenshot: document.getElementById('screenshot'),
+                shareUrl: document.getElementById('share-url'),
+                exportData: document.getElementById('export-data')
             };
             
+            function initWebGLRenderer() {
+                try {
+                    webglRenderer = new WebGLRenderer(canvas);
+                    return true;
+                } catch (e) {
+                    console.warn('WebGL not supported:', e.message);
+                    return false;
+                }
+            }
+            
+            function updateAttractorControls() {
+                const attractorInfo = attractor.get_attractor_info().split('|');
+                const [name, labelA, labelB, labelC, rangeA, rangeB, rangeC] = attractorInfo;
+                
+                // Update labels
+                elements.paramALabel.textContent = labelA;
+                elements.paramBLabel.textContent = labelB;
+                elements.paramCLabel.textContent = labelC;
+                
+                // Update ranges
+                const [minA, maxA] = rangeA.split(',').map(parseFloat);
+                const [minB, maxB] = rangeB.split(',').map(parseFloat);
+                const [minC, maxC] = rangeC.split(',').map(parseFloat);
+                
+                elements.paramA.min = minA;
+                elements.paramA.max = maxA;
+                elements.paramB.min = minB;
+                elements.paramB.max = maxB;
+                elements.paramC.min = minC;
+                elements.paramC.max = maxC;
+                
+                // Update step sizes
+                elements.paramA.step = (maxA - minA) / 1000;
+                elements.paramB.step = (maxB - minB) / 1000;
+                elements.paramC.step = (maxC - minC) / 1000;
+                
+                // Get current parameters and update UI
+                const params = attractor.get_parameters();
+                elements.paramA.value = params[0];
+                elements.paramB.value = params[1];
+                elements.paramC.value = params[2];
+                
+                // Show/hide parameter controls
+                elements.paramB.parentElement.style.display = (labelB === 'unused') ? 'none' : 'block';
+                elements.paramC.parentElement.style.display = (labelC === 'unused') ? 'none' : 'block';
+                
+                updateParameterDisplay();
+                updatePresets();
+            }
+            
+            function updatePresets() {
+                const attractorType = attractor.get_attractor_type();
+                const presets = presetData[attractorType] || [];
+                
+                elements.presets.innerHTML = '<option value="">Select a preset...</option>';
+                
+                presets.forEach((preset, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = preset.name;
+                    elements.presets.appendChild(option);
+                });
+            }
+            
+            function loadPreset(index) {
+                const attractorType = attractor.get_attractor_type();
+                const presets = presetData[attractorType] || [];
+                const preset = presets[index];
+                
+                if (preset) {
+                    // Set parameters
+                    elements.paramA.value = preset.params[0];
+                    elements.paramB.value = preset.params[1]; 
+                    elements.paramC.value = preset.params[2];
+                    
+                    // Set initial conditions
+                    elements.x0.value = preset.x0;
+                    elements.y0.value = preset.y0;
+                    elements.z0.value = preset.z0;
+                    
+                    // Apply the settings
+                    updateParameterDisplay();
+                    resetSimulation();
+                    
+                    // Clear the selection
+                    elements.presets.value = '';
+                }
+            }
+            
             function updateParameterDisplay() {
-                elements.sigmaValue.textContent = elements.sigma.value;
-                elements.rhoValue.textContent = elements.rho.value;
-                elements.betaValue.textContent = elements.beta.value;
+                elements.paramAValue.textContent = parseFloat(elements.paramA.value).toFixed(3);
+                elements.paramBValue.textContent = parseFloat(elements.paramB.value).toFixed(3);
+                elements.paramCValue.textContent = parseFloat(elements.paramC.value).toFixed(3);
                 elements.speedValue.textContent = elements.speed.value;
                 
-                lorenz.set_parameters(
-                    parseFloat(elements.sigma.value),
-                    parseFloat(elements.rho.value),
-                    parseFloat(elements.beta.value)
+                attractor.set_parameters(
+                    parseFloat(elements.paramA.value),
+                    parseFloat(elements.paramB.value),
+                    parseFloat(elements.paramC.value)
                 );
+                
+                attractor.set_integration_method(parseInt(elements.integrationMethod.value));
+                
+                // Update memory usage
+                const memStats = attractor.get_memory_stats();
+                const memoryKB = Math.round(memStats[1] * 24 / 1024);
+                elements.memoryUsage.textContent = `${memoryKB} KB`;
             }
             
             function resetSimulation() {
-                lorenz.set_initial_conditions(
+                attractor.set_initial_conditions(
                     parseFloat(elements.x0.value),
                     parseFloat(elements.y0.value),
                     parseFloat(elements.z0.value)
                 );
-                lorenz.clear_points();
+                attractor.clear_points();
                 updateParameterDisplay();
                 elements.pointCount.textContent = '0';
             }
@@ -341,21 +605,50 @@
                 
                 if (isRunning) {
                     const steps = parseInt(elements.speed.value);
-                    lorenz.step_multiple(steps);
+                    attractor.step_multiple(steps);
                 }
                 
+                const pointCount = attractor.get_points_count();
+                elements.pointCount.textContent = pointCount.toString();
+                
+                // Update memory usage and chaos analysis periodically
+                if (frameCount % 60 === 0) {
+                    const memStats = attractor.get_memory_stats();
+                    const memoryKB = Math.round(memStats[1] * 24 / 1024);
+                    elements.memoryUsage.textContent = `${memoryKB} KB`;
+                    
+                    // Update chaos analysis
+                    const lyapunov = attractor.get_lyapunov_exponent();
+                    elements.lyapunovExponent.textContent = lyapunov.toFixed(3);
+                    
+                    const poincareCount = attractor.get_poincare_count();
+                    elements.poincareCount.textContent = poincareCount.toString();
+                }
+                
+                if (useWebGL && webglRenderer) {
+                    // Use WebGL rendering with bulk data transfer
+                    if (pointCount > 0) {
+                        const pointsData = attractor.get_points_bulk();
+                        webglRenderer.render(pointsData, currentView);
+                    }
+                } else {
+                    // Use Canvas 2D rendering
+                    renderCanvas2D(pointCount);
+                }
+                
+                animationId = requestAnimationFrame(render);
+            }
+            
+            function renderCanvas2D(pointCount) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                const pointCount = lorenz.get_points_count();
-                elements.pointCount.textContent = pointCount.toString();
                 
                 if (pointCount > 1) {
                     ctx.lineWidth = 1.5;
                     
                     for (let i = 1; i < pointCount; i++) {
-                        const prevPoint = lorenz.get_point(i - 1);
-                        const currentPoint = lorenz.get_point(i);
+                        const prevPoint = attractor.get_point(i - 1);
+                        const currentPoint = attractor.get_point(i);
                         
                         if (prevPoint && currentPoint) {
                             const [x1, y1] = projectPoint(prevPoint, currentView);
@@ -369,7 +662,7 @@
                         }
                     }
                     
-                    const currentPoint = lorenz.get_current_position();
+                    const currentPoint = attractor.get_current_position();
                     const [x, y] = projectPoint(currentPoint, currentView);
                     
                     ctx.fillStyle = '#00ffff';
@@ -378,7 +671,30 @@
                     ctx.fill();
                 }
                 
-                animationId = requestAnimationFrame(render);
+                // Render Poincaré section if enabled
+                if (elements.showPoincare.checked && currentView === 'xy') {
+                    const poincareData = attractor.get_poincare_points();
+                    const poincareCount = poincareData.length / 2;
+                    
+                    if (poincareCount > 0) {
+                        ctx.fillStyle = '#ff00ff';
+                        for (let i = 0; i < poincareCount; i++) {
+                            const x = poincareData[i * 2];
+                            const y = poincareData[i * 2 + 1];
+                            
+                            const centerX = canvas.width / 2;
+                            const centerY = canvas.height / 2;
+                            const scale = 8;
+                            
+                            const screenX = centerX + x * scale;
+                            const screenY = centerY - y * scale;
+                            
+                            ctx.beginPath();
+                            ctx.arc(screenX, screenY, 2, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
+                }
             }
             
             elements.startStop.addEventListener('click', () => {
@@ -390,22 +706,242 @@
             elements.reset.addEventListener('click', resetSimulation);
             
             elements.clear.addEventListener('click', () => {
-                lorenz.clear_points();
+                attractor.clear_points();
                 ctx.fillStyle = '#000';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             });
             
-            elements.sigma.addEventListener('input', updateParameterDisplay);
-            elements.rho.addEventListener('input', updateParameterDisplay);
-            elements.beta.addEventListener('input', updateParameterDisplay);
+            elements.paramA.addEventListener('input', updateParameterDisplay);
+            elements.paramB.addEventListener('input', updateParameterDisplay);
+            elements.paramC.addEventListener('input', updateParameterDisplay);
             elements.speed.addEventListener('input', updateParameterDisplay);
+            elements.integrationMethod.addEventListener('change', updateParameterDisplay);
+            
+            elements.attractorType.addEventListener('change', (e) => {
+                attractor.set_attractor_type(parseInt(e.target.value));
+                updateAttractorControls();
+                attractor.clear_points();
+                
+                // Clear canvas when switching attractors
+                if (!useWebGL) {
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            });
             
             elements.viewXY.addEventListener('click', () => setActiveView('xy'));
             elements.viewXZ.addEventListener('click', () => setActiveView('xz'));
             elements.viewYZ.addEventListener('click', () => setActiveView('yz'));
             elements.view3D.addEventListener('click', () => setActiveView('3d'));
             
-            resetSimulation();
+            // Renderer controls
+            elements.rendererType.addEventListener('change', (e) => {
+                const newRenderer = e.target.value;
+                if (newRenderer === 'webgl' && !webglRenderer && !initWebGLRenderer()) {
+                    elements.rendererType.value = 'canvas';
+                    alert('WebGL is not supported on this device/browser');
+                    return;
+                }
+                
+                useWebGL = (newRenderer === 'webgl');
+                elements.currentRenderer.textContent = useWebGL ? 'WebGL' : 'Canvas 2D';
+                elements.webglControls.style.display = useWebGL ? 'block' : 'none';
+                
+                if (!useWebGL) {
+                    // Clear canvas when switching to 2D
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            });
+            
+            elements.colorScheme.addEventListener('change', (e) => {
+                if (webglRenderer) {
+                    webglRenderer.setColorScheme(parseInt(e.target.value));
+                }
+            });
+            
+            elements.cameraDistance.addEventListener('input', (e) => {
+                const distance = parseInt(e.target.value);
+                elements.cameraDistanceValue.textContent = distance;
+                if (webglRenderer) {
+                    webglRenderer.setCameraDistance(distance);
+                }
+            });
+            
+            elements.autoRotate.addEventListener('change', (e) => {
+                if (webglRenderer) {
+                    webglRenderer.setAutoRotate(e.target.checked);
+                }
+            });
+            
+            // Chaos analysis controls
+            elements.poincareZ.addEventListener('input', (e) => {
+                const zValue = parseFloat(e.target.value);
+                elements.poincareZValue.textContent = zValue.toFixed(1);
+                attractor.set_poincare_plane(zValue);
+            });
+            
+            elements.resetChaos.addEventListener('click', () => {
+                attractor.reset_lyapunov();
+                attractor.clear_poincare_points();
+                elements.lyapunovExponent.textContent = '0.000';
+                elements.poincareCount.textContent = '0';
+            });
+            
+            // Presets controls
+            elements.presets.addEventListener('change', (e) => {
+                if (e.target.value !== '') {
+                    loadPreset(parseInt(e.target.value));
+                }
+            });
+            
+            elements.savePreset.addEventListener('click', () => {
+                const name = prompt('Enter a name for this preset:');
+                if (name) {
+                    const attractorType = attractor.get_attractor_type();
+                    const params = attractor.get_parameters();
+                    
+                    const newPreset = {
+                        name: name,
+                        params: params,
+                        x0: parseFloat(elements.x0.value),
+                        y0: parseFloat(elements.y0.value),
+                        z0: parseFloat(elements.z0.value)
+                    };
+                    
+                    if (!presetData[attractorType]) {
+                        presetData[attractorType] = [];
+                    }
+                    
+                    presetData[attractorType].push(newPreset);
+                    updatePresets();
+                    
+                    // Save to localStorage
+                    localStorage.setItem('chaotic-attractors-presets', JSON.stringify(presetData));
+                }
+            });
+            
+            // Export and sharing functions
+            elements.screenshot.addEventListener('click', () => {
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.download = `chaotic-attractor-${Date.now()}.png`;
+                    link.href = url;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                });
+            });
+            
+            elements.shareUrl.addEventListener('click', () => {
+                const state = {
+                    attractor: attractor.get_attractor_type(),
+                    params: attractor.get_parameters(),
+                    x0: parseFloat(elements.x0.value),
+                    y0: parseFloat(elements.y0.value),
+                    z0: parseFloat(elements.z0.value),
+                    view: currentView,
+                    renderer: useWebGL ? 'webgl' : 'canvas',
+                    colorScheme: parseInt(elements.colorScheme.value),
+                    integrationMethod: parseInt(elements.integrationMethod.value)
+                };
+                
+                const encodedState = btoa(JSON.stringify(state));
+                const shareUrl = `${window.location.origin}${window.location.pathname}?state=${encodedState}`;
+                
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert('Share URL copied to clipboard!');
+                }).catch(() => {
+                    prompt('Copy this URL to share:', shareUrl);
+                });
+            });
+            
+            elements.exportData.addEventListener('click', () => {
+                const pointsData = attractor.get_points_bulk();
+                const pointCount = attractor.get_points_count();
+                
+                if (pointCount === 0) {
+                    alert('No data to export. Run the simulation first.');
+                    return;
+                }
+                
+                let csv = 'x,y,z\n';
+                for (let i = 0; i < pointCount; i++) {
+                    const x = pointsData[i * 3];
+                    const y = pointsData[i * 3 + 1];
+                    const z = pointsData[i * 3 + 2];
+                    csv += `${x},${y},${z}\n`;
+                }
+                
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = `chaotic-attractor-data-${Date.now()}.csv`;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+            });
+            
+            // Load state from URL if present
+            const urlParams = new URLSearchParams(window.location.search);
+            const stateParam = urlParams.get('state');
+            if (stateParam) {
+                try {
+                    const state = JSON.parse(atob(stateParam));
+                    
+                    // Set attractor type first
+                    attractor.set_attractor_type(state.attractor || 0);
+                    elements.attractorType.value = state.attractor || 0;
+                    
+                    updateAttractorControls();
+                    
+                    // Set parameters
+                    if (state.params) {
+                        elements.paramA.value = state.params[0];
+                        elements.paramB.value = state.params[1];
+                        elements.paramC.value = state.params[2];
+                    }
+                    
+                    // Set initial conditions
+                    if (state.x0 !== undefined) elements.x0.value = state.x0;
+                    if (state.y0 !== undefined) elements.y0.value = state.y0;
+                    if (state.z0 !== undefined) elements.z0.value = state.z0;
+                    
+                    // Set view and renderer
+                    if (state.view) currentView = state.view;
+                    if (state.renderer === 'webgl' && initWebGLRenderer()) {
+                        useWebGL = true;
+                        elements.rendererType.value = 'webgl';
+                        elements.currentRenderer.textContent = 'WebGL';
+                        elements.webglControls.style.display = 'block';
+                    }
+                    
+                    if (state.colorScheme !== undefined) {
+                        elements.colorScheme.value = state.colorScheme;
+                        if (webglRenderer) {
+                            webglRenderer.setColorScheme(state.colorScheme);
+                        }
+                    }
+                    
+                    if (state.integrationMethod !== undefined) {
+                        elements.integrationMethod.value = state.integrationMethod;
+                    }
+                    
+                    updateParameterDisplay();
+                    resetSimulation();
+                    
+                    // Set active view
+                    document.querySelectorAll('.view-controls button').forEach(btn => btn.classList.remove('active-view'));
+                    document.getElementById(`view-${currentView}`).classList.add('active-view');
+                    
+                } catch (e) {
+                    console.warn('Failed to load state from URL:', e);
+                }
+            } else {
+                updateAttractorControls();
+                resetSimulation();
+            }
+            
             render(0);
         }
         
