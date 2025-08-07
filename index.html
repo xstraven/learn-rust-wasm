@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Lorenz Attractor - Rust + WebAssembly</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .controls {
+            width: 300px;
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            height: fit-content;
+        }
+        
+        canvas {
+            border: 2px solid #444;
+            background-color: #000;
+            border-radius: 8px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #00ffff;
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            color: #00ffff;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+        
+        input[type="range"], input[type="number"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        input[type="range"] {
+            height: 20px;
+        }
+        
+        input[type="number"] {
+            padding: 5px;
+            border: 1px solid #444;
+            background-color: #333;
+            color: #fff;
+            border-radius: 4px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            background-color: #0066cc;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background-color: #0052a3;
+        }
+        
+        button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        
+        .stats {
+            background-color: #333;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+        
+        .info {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .view-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .view-controls button {
+            flex: 1;
+            padding: 8px;
+            font-size: 12px;
+        }
+        
+        .active-view {
+            background-color: #00ffff !important;
+            color: #000 !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Lorenz Attractor Simulation</h1>
+    <p style="text-align: center; color: #aaa; margin-bottom: 30px;">
+        Powered by Rust compiled to WebAssembly for high-performance mathematical computation
+    </p>
+    
+    <div class="container">
+        <div class="canvas-container">
+            <canvas id="canvas" width="800" height="600"></canvas>
+            <div class="view-controls">
+                <button id="view-xy" class="active-view">XY Plane</button>
+                <button id="view-xz">XZ Plane</button>
+                <button id="view-yz">YZ Plane</button>
+                <button id="view-3d">3D View</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <h2>Simulation Parameters</h2>
+            
+            <div class="control-group">
+                <label>Sigma (σ): <span id="sigma-value">10.0</span></label>
+                <input type="range" id="sigma" min="0.1" max="20" step="0.1" value="10">
+            </div>
+            
+            <div class="control-group">
+                <label>Rho (ρ): <span id="rho-value">28.0</span></label>
+                <input type="range" id="rho" min="0.1" max="50" step="0.1" value="28">
+            </div>
+            
+            <div class="control-group">
+                <label>Beta (β): <span id="beta-value">2.67</span></label>
+                <input type="range" id="beta" min="0.1" max="5" step="0.01" value="2.67">
+            </div>
+            
+            <div class="control-group">
+                <label>Speed: <span id="speed-value">1</span></label>
+                <input type="range" id="speed" min="1" max="10" step="1" value="1">
+            </div>
+            
+            <h2>Initial Conditions</h2>
+            
+            <div class="control-group">
+                <label>X₀:</label>
+                <input type="number" id="x0" value="0.1" step="0.1">
+            </div>
+            
+            <div class="control-group">
+                <label>Y₀:</label>
+                <input type="number" id="y0" value="0" step="0.1">
+            </div>
+            
+            <div class="control-group">
+                <label>Z₀:</label>
+                <input type="number" id="z0" value="0" step="0.1">
+            </div>
+            
+            <h2>Controls</h2>
+            
+            <button id="start-stop">Start Simulation</button>
+            <button id="reset">Reset</button>
+            <button id="clear">Clear Trail</button>
+            
+            <div class="stats">
+                <div><strong>Status:</strong> <span id="status">Stopped</span></div>
+                <div><strong>Points:</strong> <span id="point-count">0</span></div>
+                <div><strong>FPS:</strong> <span id="fps">0</span></div>
+            </div>
+            
+            <div class="info">
+                <h3 style="margin-top: 0; color: #00ffff;">About the Lorenz Attractor</h3>
+                <p>The Lorenz attractor is a chaotic system discovered by Edward Lorenz. It demonstrates how complex, unpredictable behavior can arise from simple deterministic equations.</p>
+                
+                <p><strong>Equations:</strong><br>
+                dx/dt = σ(y - x)<br>
+                dy/dt = x(ρ - z) - y<br>
+                dz/dt = xy - βz</p>
+                
+                <p><strong>Why Rust + WASM?</strong><br>
+                This simulation performs thousands of floating-point calculations per frame. Rust's zero-cost abstractions and memory safety, compiled to WebAssembly, provide near-native performance in the browser.</p>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import init, { LorenzAttractor } from './pkg/lorenz_attractor_wasm.js';
+        
+        async function run() {
+            await init();
+            
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const lorenz = new LorenzAttractor();
+            
+            let isRunning = false;
+            let currentView = 'xy';
+            let animationId = null;
+            let lastTime = 0;
+            let frameCount = 0;
+            let lastFpsUpdate = 0;
+            
+            const elements = {
+                startStop: document.getElementById('start-stop'),
+                reset: document.getElementById('reset'),
+                clear: document.getElementById('clear'),
+                status: document.getElementById('status'),
+                pointCount: document.getElementById('point-count'),
+                fps: document.getElementById('fps'),
+                sigma: document.getElementById('sigma'),
+                rho: document.getElementById('rho'),
+                beta: document.getElementById('beta'),
+                speed: document.getElementById('speed'),
+                x0: document.getElementById('x0'),
+                y0: document.getElementById('y0'),
+                z0: document.getElementById('z0'),
+                sigmaValue: document.getElementById('sigma-value'),
+                rhoValue: document.getElementById('rho-value'),
+                betaValue: document.getElementById('beta-value'),
+                speedValue: document.getElementById('speed-value'),
+                viewXY: document.getElementById('view-xy'),
+                viewXZ: document.getElementById('view-xz'),
+                viewYZ: document.getElementById('view-yz'),
+                view3D: document.getElementById('view-3d')
+            };
+            
+            function updateParameterDisplay() {
+                elements.sigmaValue.textContent = elements.sigma.value;
+                elements.rhoValue.textContent = elements.rho.value;
+                elements.betaValue.textContent = elements.beta.value;
+                elements.speedValue.textContent = elements.speed.value;
+                
+                lorenz.set_parameters(
+                    parseFloat(elements.sigma.value),
+                    parseFloat(elements.rho.value),
+                    parseFloat(elements.beta.value)
+                );
+            }
+            
+            function resetSimulation() {
+                lorenz.set_initial_conditions(
+                    parseFloat(elements.x0.value),
+                    parseFloat(elements.y0.value),
+                    parseFloat(elements.z0.value)
+                );
+                lorenz.clear_points();
+                updateParameterDisplay();
+                elements.pointCount.textContent = '0';
+            }
+            
+            function setActiveView(view) {
+                document.querySelectorAll('.view-controls button').forEach(btn => {
+                    btn.classList.remove('active-view');
+                });
+                document.getElementById(`view-${view}`).classList.add('active-view');
+                currentView = view;
+            }
+            
+            function projectPoint(point, view) {
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const scale = 8;
+                
+                switch (view) {
+                    case 'xy':
+                        return [centerX + point.x * scale, centerY - point.y * scale];
+                    case 'xz':
+                        return [centerX + point.x * scale, centerY - point.z * scale * 0.5];
+                    case 'yz':
+                        return [centerX + point.y * scale, centerY - point.z * scale * 0.5];
+                    case '3d':
+                        const rotY = Date.now() * 0.001;
+                        const cosY = Math.cos(rotY);
+                        const sinY = Math.sin(rotY);
+                        
+                        const x3d = point.x * cosY - point.z * sinY;
+                        const z3d = point.x * sinY + point.z * cosY;
+                        
+                        const perspective = 1000 / (1000 + z3d * 20);
+                        return [
+                            centerX + x3d * scale * perspective,
+                            centerY - point.y * scale * perspective * 0.8
+                        ];
+                    default:
+                        return [centerX + point.x * scale, centerY - point.y * scale];
+                }
+            }
+            
+            function getPointColor(index, total) {
+                const ratio = index / total;
+                const hue = (240 + ratio * 120) % 360;
+                const alpha = 0.3 + ratio * 0.7;
+                return `hsla(${hue}, 100%, 60%, ${alpha})`;
+            }
+            
+            function render(timestamp) {
+                if (!lastTime) lastTime = timestamp;
+                const deltaTime = timestamp - lastTime;
+                lastTime = timestamp;
+                
+                frameCount++;
+                if (timestamp - lastFpsUpdate > 1000) {
+                    elements.fps.textContent = Math.round(frameCount * 1000 / (timestamp - lastFpsUpdate));
+                    frameCount = 0;
+                    lastFpsUpdate = timestamp;
+                }
+                
+                if (isRunning) {
+                    const steps = parseInt(elements.speed.value);
+                    lorenz.step_multiple(steps);
+                }
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const pointCount = lorenz.get_points_count();
+                elements.pointCount.textContent = pointCount.toString();
+                
+                if (pointCount > 1) {
+                    ctx.lineWidth = 1.5;
+                    
+                    for (let i = 1; i < pointCount; i++) {
+                        const prevPoint = lorenz.get_point(i - 1);
+                        const currentPoint = lorenz.get_point(i);
+                        
+                        if (prevPoint && currentPoint) {
+                            const [x1, y1] = projectPoint(prevPoint, currentView);
+                            const [x2, y2] = projectPoint(currentPoint, currentView);
+                            
+                            ctx.strokeStyle = getPointColor(i, pointCount);
+                            ctx.beginPath();
+                            ctx.moveTo(x1, y1);
+                            ctx.lineTo(x2, y2);
+                            ctx.stroke();
+                        }
+                    }
+                    
+                    const currentPoint = lorenz.get_current_position();
+                    const [x, y] = projectPoint(currentPoint, currentView);
+                    
+                    ctx.fillStyle = '#00ffff';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                animationId = requestAnimationFrame(render);
+            }
+            
+            elements.startStop.addEventListener('click', () => {
+                isRunning = !isRunning;
+                elements.startStop.textContent = isRunning ? 'Stop Simulation' : 'Start Simulation';
+                elements.status.textContent = isRunning ? 'Running' : 'Stopped';
+            });
+            
+            elements.reset.addEventListener('click', resetSimulation);
+            
+            elements.clear.addEventListener('click', () => {
+                lorenz.clear_points();
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            });
+            
+            elements.sigma.addEventListener('input', updateParameterDisplay);
+            elements.rho.addEventListener('input', updateParameterDisplay);
+            elements.beta.addEventListener('input', updateParameterDisplay);
+            elements.speed.addEventListener('input', updateParameterDisplay);
+            
+            elements.viewXY.addEventListener('click', () => setActiveView('xy'));
+            elements.viewXZ.addEventListener('click', () => setActiveView('xz'));
+            elements.viewYZ.addEventListener('click', () => setActiveView('yz'));
+            elements.view3D.addEventListener('click', () => setActiveView('3d'));
+            
+            resetSimulation();
+            render(0);
+        }
+        
+        run();
+    </script>
+</body>
+</html>
